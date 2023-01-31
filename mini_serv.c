@@ -30,7 +30,7 @@ int getServerSocket(int port) {
   
 	// Binding newly created socket to given IP and verification 
 	fatalCheck(bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)));
-	fatalCheck(listen(sockfd, 10) != 0);
+	fatalCheck(listen(sockfd, 10));
     return sockfd;
 }
 
@@ -92,6 +92,7 @@ void servClient(Client *client, fd_set *current_socks, fd_set *write_ready) {
             write(client->fd, message, size);
         } 
         FD_CLR(client->fd, current_socks);
+        close(client->fd);
         client->fd = -1;
         client->isActive = 0;
         return ;
@@ -129,7 +130,7 @@ int main(int ac, char **av) {
             acceptNewClient(servSock, &current_socks, &write_ready);
         }
         for (Client *client = clients; client != NULL ;client = client->next) {
-            if (!FD_ISSET(client->fd, &read_ready))
+            if (!client->isActive || !FD_ISSET(client->fd, &read_ready))
                 continue;
             servClient(client, &current_socks, &write_ready);
         }
